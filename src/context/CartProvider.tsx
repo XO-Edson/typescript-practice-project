@@ -27,119 +27,128 @@ export type ReducerAction = {
   payload?: CartItemType;
 };
 
-const reducer = (state: CartStateType, action: ReducerAction): CartStateType => {
+const reducer = (
+  state: CartStateType,
+  action: ReducerAction
+): CartStateType => {
+  switch (action.type) {
+    case REDUCER_ACTION_TYPE.ADD: {
+      if (!action.payload) {
+        throw new Error("Action.payload missing in ADD action");
+      }
 
-    switch (action.type) {
+      const { sku, name, price } = action.payload;
 
-        case REDUCER_ACTION_TYPE.ADD: {
-            
-            if (!action.payload) {
-                throw new Error ("Action.payload missing in ADD action")
-            }
+      const filteredCart: CartItemType[] = state.cart.filter(
+        (item) => item.sku !== sku
+      );
 
-            const { sku, name, price } = action.payload
+      const ItemExists: CartItemType | undefined = state.cart.find(
+        (item) => item.sku === sku
+      );
 
-            const filteredCart: CartItemType[] = state.cart.filter(item => item.sku !== sku)
+      const qty: number = ItemExists ? ItemExists.quantity + 1 : 1;
 
-            const ItemExists: CartItemType | undefined = state.cart.find(item => item.sku === sku)
-
-            const qty:number = ItemExists ? ItemExists.quantity + 1 : 1
-            
-            return {...state,cart:[...filteredCart,{sku,name,price,quantity:qty}]}
-            
-
-        }
-        case REDUCER_ACTION_TYPE.REMOVE: {
-            if (!action.payload) {
-                throw new Error ("Action.payload missing in REMOVE action")
-            }
-            const { sku } = action.payload
-
-            const filteredCart: CartItemType[] = state.cart.filter(item => item.sku !== sku)
-
-            return {...state,cart:[...filteredCart]}
-        }
-            
-        case REDUCER_ACTION_TYPE.QUANTITY: {
-            if (!action.payload) {
-                throw new Error("Action.payload missing in QUANTITY action")
-            }
-            const { sku, quantity } = action.payload
-
-            const filteredCart: CartItemType[] = state.cart.filter(item => item.sku !== sku)
-
-            const ItemExists: CartItemType | undefined = state.cart.find(item => item.sku === sku)
-
-            if (!ItemExists) {
-                throw new Error("Item must exist...")
-            }
-
-            const updatedItem: CartItemType = { ...ItemExists, quantity }
-            
-            return {
-                ...state, cart: [...filteredCart, updatedItem]
-
-            }
-        }
-        case REDUCER_ACTION_TYPE.SUBMIT {
-            return {...state,cart: []}
-        }
-        default:
-            throw new Error ("Undefined reducer action type")
+      return {
+        ...state,
+        cart: [...filteredCart, { sku, name, price, quantity: qty }],
+      };
     }
-}
+    case REDUCER_ACTION_TYPE.REMOVE: {
+      if (!action.payload) {
+        throw new Error("Action.payload missing in REMOVE action");
+      }
+      const { sku } = action.payload;
+
+      const filteredCart: CartItemType[] = state.cart.filter(
+        (item) => item.sku !== sku
+      );
+
+      return { ...state, cart: [...filteredCart] };
+    }
+
+    case REDUCER_ACTION_TYPE.QUANTITY: {
+      if (!action.payload) {
+        throw new Error("Action.payload missing in QUANTITY action");
+      }
+      const { sku, quantity } = action.payload;
+
+      const filteredCart: CartItemType[] = state.cart.filter(
+        (item) => item.sku !== sku
+      );
+
+      const ItemExists: CartItemType | undefined = state.cart.find(
+        (item) => item.sku === sku
+      );
+
+      if (!ItemExists) {
+        throw new Error("Item must exist...");
+      }
+
+      const updatedItem: CartItemType = { ...ItemExists, quantity };
+
+      return {
+        ...state,
+        cart: [...filteredCart, updatedItem],
+      };
+    }
+    case REDUCER_ACTION_TYPE.SUBMIT: {
+      return { ...state, cart: [] };
+    }
+    default:
+      throw new Error("Undefined reducer action type");
+  }
+};
 
 const useCartContext = (initCartState: CartStateType) => {
+  const [state, dispatch] = useReducer(reducer, initCartState);
 
-    const [state, dispatch] = useReducer(reducer, initCartState)
-    
-    const REDUCER_ACTIONS = useMemo(() => {
-       return REDUCER_ACTION_TYPE 
-    }, [])
-    
-    const totalItems:number = state.cart.reduce((previousValue, cartItem)=> {
-      return previousValue + cartItem.quantity
-    },0)
+  const REDUCER_ACTIONS = useMemo(() => {
+    return REDUCER_ACTION_TYPE;
+  }, []);
 
-    const totalPrice = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-        state.cart.reduce((previousValue, cartItem)=> {
-    return previousValue + (cartItem.quantity *cartItem.price)
-        }, 0)
-    )
+  const totalItems: number = state.cart.reduce((previousValue, cartItem) => {
+    return previousValue + cartItem.quantity;
+  }, 0);
 
-    const cart = state.cart.sort((a, b) => {
-        const itemA = Number(a.sku.slice(-4))
-        const ItemB = Number(b.sku.slice(-4))
-        return itemA - ItemB
-    })
-    
-    return {dispatch ,REDUCER_ACTIONS,totalItems,totalPrice,cart}
-}
+  const totalPrice = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(
+    state.cart.reduce((previousValue, cartItem) => {
+      return previousValue + cartItem.quantity * cartItem.price;
+    }, 0)
+  );
 
-export type useCartContextType = ReturnType<typeof useCartContext>
+  const cart = state.cart.sort((a, b) => {
+    const itemA = Number(a.sku.slice(-4));
+    const ItemB = Number(b.sku.slice(-4));
+    return itemA - ItemB;
+  });
+
+  return { dispatch, REDUCER_ACTIONS, totalItems, totalPrice, cart };
+};
+
+export type useCartContextType = ReturnType<typeof useCartContext>;
 
 const initContextState: useCartContextType = {
-    dispatch: () => { },
-    REDUCER_ACTIONS: REDUCER_ACTION_TYPE,
-    totalItems: 0,
-    totalPrice: "",
-    cart:[]
-}
+  dispatch: () => {},
+  REDUCER_ACTIONS: REDUCER_ACTION_TYPE,
+  totalItems: 0,
+  totalPrice: "",
+  cart: [],
+};
 
-export const CartContext = createContext(initContextState)
+export const CartContext = createContext<useCartContextType>(initContextState);
 
 type ChildrenType = {
-    children?:ReactElement | ReactElement[]
-}
+  children?: ReactElement | ReactElement[];
+};
 
 export const cartProvider = ({ children }: ChildrenType): ReactElement => {
+  const value = useCartContext(initCartState);
 
-    const value = useCartContext(initCartState)
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+};
 
-    return (
-       < CartContext.Provider value={{value}}>
-{children}
-        </CartContext.Provider >
-    )
-    
-}
+export default CartContext;

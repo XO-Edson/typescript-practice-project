@@ -49,3 +49,5 @@ export const ProductsProvider = ({
     </ProductsContext.Provider>
   );
 };
+
+export default ProductsContext;
