@@ -145,7 +145,7 @@ type ChildrenType = {
   children?: ReactElement | ReactElement[];
 };
 
-export const cartProvider = ({ children }: ChildrenType): ReactElement => {
+export const CartProvider = ({ children }: ChildrenType): ReactElement => {
   const value = useCartContext(initCartState);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
